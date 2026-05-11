@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /js/firebase-config.js
+Disallow: /assets/sounds/
+
+Sitemap: https://YOUR-DOMAIN.com/sitemap.xml

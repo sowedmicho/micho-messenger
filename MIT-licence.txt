@@ -1,0 +1,24 @@
+
+### Deployment Instructions
+
+**For GitHub Pages (Easiest & Free):**
+1. Create a new repository on GitHub named `micho-messenger`
+2. Upload all files to the repository
+3. Go to **Settings** → **Pages**
+4. Under "Source", select `main` branch
+5. Click **Save**
+6. Your app will be live at `https://[your-username].github.io/micho-messenger/`
+
+**For Firebase Hosting:**
+```bash
+# Install Firebase CLI
+npm install -g firebase-tools
+
+# Login
+firebase login
+
+# Initialize in project folder
+firebase init hosting
+
+# Deploy
+firebase deploy --only hosting

@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#075e54">
+    <meta name="description" content="MICHO MESSENGER - Free messaging, voice & video calls worldwide">
+    <meta name="keywords" content="messaging, chat, voice call, video call, free calls">
+    <meta property="og:title" content="MICHO MESSENGER">
+    <meta property="og:description" content="Free messaging with voice & video calls">
+    <meta property="og:image" content="assets/images/logo-512.png">
+    <meta property="og:type" content="website">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/images/logo-192.png">
+    <link rel="apple-touch-icon" href="assets/images/logo-512.png">
+    <title>MICHO MESSENGER - Chat & Call Free</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/call.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Inline critical CSS for faster loading */
+        :root {
+            --primary: #075e54;
+            --primary-light: #128c7e;
+            --accent: #25d366;
+            --accent-hover: #20bd5a;
+            --bg-white: #ffffff;
+            --bg-light: #f0f2f5;
+            --text-primary: #111b21;
+            --text-secondary: #667781;
+            --danger: #ea0038;
+            --warning: #ff9800;
+            --info: #2196f3;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #dddbd1;
+            height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .screen {
+            display: none;
+            height: 100vh;
+            width: 100%;
+        }
+        
+        .screen.active {
+            display: flex;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #075e54, #128c7e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+        
+        .loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .logo-spinner {
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+        
+        .logo-spinner svg {
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .loading-text {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            margin-bottom: 30px;
+        }
+        
+        .loading-bar {
+            width: 200px;
+            height: 3px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+        
+        .loading-progress {
+            height: 100%;
+            background: white;
+            border-radius: 3px;
+            animation: loading 2s infinite;
+        }
+        
+        @keyframes loading {
+            0% { width: 0; }
+            50% { width: 70%; }
+            100% { width: 100%; }
+        }
+        
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .toast {
+            padding: 14px 20px;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 280px;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .toast-success { background: #4caf50; }
+        .toast-error { background: #f44336; }
+        .toast-warning { background: #ff9800; }
+        .toast-info { background: #2196f3; }
+        
+        .toast-removing {
+            animation: slideOutRight 0.3s ease forwards;
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="logo-spinner">
+                <svg viewBox="0 0 100 100" width="80" height="80">
+                    <defs>
+                        <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#25d366;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#128c7e;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="white" stroke-width="3" stroke-dasharray="283">
+                        <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="2s" repeatCount="indefinite"/>
+                    </circle>
+                    <path d="M30 35 L30 65 L45 55 L55 62 L55 38 L45 45 Z" fill="white"/>
+                    <rect x="58" y="33" width="12" height="34" rx="3" fill="white"/>
+                </svg>
+            </div>
+            <p class="loading-text">MICHO MESSENGER</p>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen active">
+        <div class="login-wrapper">
+            <div class="login-bg-shapes">
+                <div class="shape shape-1"></div>
+                <div class="shape shape-2"></div>
+                <div class="shape shape-3"></div>
+            </div>
+            
+            <div class="login-card">
+                <div class="login-brand">
+                    <div class="m-logo" id="m-logo-login">
+                        <svg viewBox="0 0 80 80" width="80" height="80">
+                            <defs>
+                                <linearGradient id="mGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#25d366"/>
+                                    <stop offset="100%" style="stop-color:#128c7e"/>
+                                </linearGradient>
+                            </defs>
+                            <circle cx="40" cy="40" r="38" fill="url(#mGrad)"/>
+                            <circle cx="40" cy="40" r="38" fill="none" stroke="white" stroke-width="2"/>
+                            <!-- M shape -->
+                            <path d="M22 25 L22 55 L33 42 L40 50 L47 42 L58 55 L58 25" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                            <!-- Phone receiver -->
+                            <path d="M55 22 C60 22 60 28 60 28" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h1 class="brand-name">MICHO MESSENGER</h1>
+                    <p class="brand-tagline">Chat, Call, Connect — Free Worldwide</p>
+                </div>
+                
+                <form id="login-form" class="login-form" autocomplete="off">
+                    <div class="form-group">
+                        <label for="country-code">
+                            <i class="fas fa-globe-africa"></i> Country
+                        </label>
+                        <select id="country-code" class="country-select">
+                            <option value="+93">🇦🇫 Afghanistan +93</option>
+                            <option value="+355">🇦🇱 Albania +355</option>
+                            <option value="+213">🇩🇿 Algeria +213</option>
+                            <option value="+376">🇦🇩 Andorra +376</option>
+                            <option value="+244">🇦🇴 Angola +244</option>
+                            <option value="+54">🇦🇷 Argentina +54</option>
+                            <option value="+374">🇦🇲 Armenia +374</option>
+                            <option value="+61">🇦🇺 Australia +61</option>
+                            <option value="+43">🇦🇹 Austria +43</option>
+                            <option value="+994">🇦🇿 Azerbaijan +994</option>
+                            <option value="+973">🇧🇭 Bahrain +973</option>
+                            <option value="+880">🇧🇩 Bangladesh +880</option>
+                            <option value="+375">🇧🇾 Belarus +375</option>
+                            <option value="+32">🇧🇪 Belgium +32</option>
+                            <option value="+229">🇧🇯 Benin +229</option>
+                            <option value="+591">🇧🇴 Bolivia +591</option>
+                            <option value="+387">🇧🇦 Bosnia +387</option>
+                            <option value="+267">🇧🇼 Botswana +267</option>
+                            <option value="+55">🇧🇷 Brazil +55</option>
+                            <option value="+359">🇧🇬 Bulgaria +359</option>
+                            <option value="+226">🇧🇫 Burkina Faso +226</option>
+                            <option value="+257">🇧🇮 Burundi +257</option>
+                            <option value="+855">🇰🇭 Cambodia +855</option>
+                            <option value="+237">🇨🇲 Cameroon +237</option>
+                            <option value="+1">🇨🇦 Canada +1</option>
+                            <option value="+238">🇨🇻 Cape Verde +238</option>
+                            <option value="+236">🇨🇫 CAR +236</option>
+                            <option value="+235">🇹🇩 Chad +235</option>
+                            <option value="+56">🇨🇱 Chile +56</option>
+                            <option value="+86">🇨🇳 China +86</option>
+                            <option value="+57">🇨🇴 Colombia +57</option>
+                            <option value="+243">🇨🇩 DR Congo +243</option>
+                            <option value="+242">🇨🇬 Congo +242</option>
+                            <option value="+506">🇨🇷 Costa Rica +506</option>
+                            <option value="+225">🇨🇮 Côte d'Ivoire +225</option>
+                            <option value="+385">🇭🇷 Croatia +385</option>
+                            <option value="+53">🇨🇺 Cuba +53</option>
+                            <option value="+357">🇨🇾 Cyprus +357</option>
+                            <option value="+420">🇨🇿 Czech Republic +420</option>
+                            <option value="+45">🇩🇰 Denmark +45</option>
+                            <option value="+253">🇩🇯 Djibouti +253</option>
+                            <option value="+1-809">🇩🇴 Dominican Rep. +1-809</option>
+                            <option value="+593">🇪🇨 Ecuador +593</option>
+                            <option value="+20">🇪🇬 Egypt +20</option>
+                            <option value="+503">🇸🇻 El Salvador +503</option>
+                            <option value="+240">🇬🇶 Equatorial Guinea +240</option>
+                            <option value="+291">🇪🇷 Eritrea +291</option>
+                            <option value="+372">🇪🇪 Estonia +372</option>
+                            <option value="+251">🇪🇹 Ethiopia +251</option>
+                            <option value="+679">🇫🇯 Fiji +679</option>
+                            <option value="+358">🇫🇮 Finland +358</option>
+                            <option value="+33">🇫🇷 France +33</option>
+                            <option value="+241">🇬🇦 Gabon +241</option>
+                            <option value="+220">🇬🇲 Gambia +220</option>
+                            <option value="+995">🇬🇪 Georgia +995</option>
+                            <option value="+49">🇩🇪 Germany +49</option>
+                            <option value="+233">🇬🇭 Ghana +233</option>
+                            <option value="+30">🇬🇷 Greece +30</option>
+                            <option value="+502">🇬🇹 Guatemala +502</option>
+                            <option value="+224">🇬🇳 Guinea +224</option>
+                            <option value="+245">🇬🇼 Guinea-Bissau +245</option>
+                            <option value="+592">🇬🇾 Guyana +592</option>
+                            <option value="+509">🇭🇹 Haiti +509</option>
+                            <option value="+504">🇭🇳 Honduras +504</option>
+                            <option value="+36">🇭🇺 Hungary +36</option>
+                            <option value="+354">🇮🇸 Iceland +354</option>
+                            <option value="+91">🇮🇳 India +91</option>
+                            <option value="+62">🇮🇩 Indonesia +62</option>
+                            <option value="+98">🇮🇷 Iran +98</option>
+                            <option value="+964">🇮🇶 Iraq +964</option>
+                            <option value="+353">🇮🇪 Ireland +353</option>
+                            <option value="+972">🇮🇱 Israel +972</option>
+                            <option value="+39">🇮🇹 Italy +39</option>
+                            <option value="+1-876">🇯🇲 Jamaica +1-876</option>
+                            <option value="+81">🇯🇵 Japan +81</option>
+                            <option value="+962">🇯🇴 Jordan +962</option>
+                            <option value="+7">🇰🇿 Kazakhstan +7</option>
+                            <option value="+254">🇰🇪 Kenya +254</option>
+                            <option value="+965">🇰🇼 Kuwait +965</option>
+                            <option value="+996">🇰🇬 Kyrgyzstan +996</option>
+                            <option value="+856">🇱🇦 Laos +856</option>
+                            <option value="+371">🇱🇻 Latvia +371</option>
+                            <option value="+961">🇱🇧 Lebanon +961</option>
+                            <option value="+266">🇱🇸 Lesotho +266</option>
+                            <option value="+231">🇱🇷 Liberia +231</option>
+                            <option value="+218">🇱🇾 Libya +218</option>
+                            <option value="+423">🇱🇮 Liechtenstein +423</option>
+                            <option value="+370">🇱🇹 Lithuania +370</option>
+                            <option value="+352">🇱🇺 Luxembourg +352</option>
+                            <option value="+261">🇲🇬 Madagascar +261</option>
+                            <option value="+265">🇲🇼 Malawi +265</option>
+                            <option value="+60">🇲🇾 Malaysia +60</option>
+                            <option value="+960">🇲🇻 Maldives +960</option>
+                            <option value="+223">🇲🇱 Mali +223</option>
+                            <option value="+356">🇲🇹 Malta +356</option>
+                            <option value="+222">🇲🇷 Mauritania +222</option>
+                            <option value="+230">🇲🇺 Mauritius +230</option>
+                            <option value="+52">🇲🇽 Mexico +52</option>
+                            <option value="+373">🇲🇩 Moldova +373</option>
+                            <option value="+976">🇲🇳 Mongolia +976</option>
+                            <option value="+382">🇲🇪 Montenegro +382</option>
+                            <option value="+212">🇲🇦 Morocco +212</option>
+                            <option value="+258">🇲🇿 Mozambique +258</option>
+                            <option value="+95">🇲🇲 Myanmar +95</option>
+                            <option value="+264">🇳🇦 Namibia +264</option>
+                            <option value="+977">🇳🇵 Nepal +977</option>
+                            <option value="+31">🇳🇱 Netherlands +31</option>
+                            <option value="+64">🇳🇿 New Zealand +64</option>
+                            <option value="+505">🇳🇮 Nicaragua +505</option>
+                            <option value="+227">🇳🇪 Niger +227</option>
+                            <option value="+234">🇳🇬 Nigeria +234</option>
+                            <option value="+850">🇰🇵 North Korea +850</option>
+                            <option value="+47">🇳🇴 Norway +47</option>
+                            <option value="+968">🇴🇲 Oman +968</option>
+                            <option value="+92">🇵🇰 Pakistan +92</option>
+                            <option value="+507">🇵🇦 Panama +507</option>
+                            <option value="+675">🇵🇬 Papua New Guinea +675</option>
+                            <option value="+595">🇵🇾 Paraguay +595</option>
+                            <option value="+51">🇵🇪 Peru +51</option>
+                            <option value="+63">🇵🇭 Philippines +63</option>
+                            <option value="+48">🇵🇱 Poland +48</option>
+                            <option value="+351">🇵🇹 Portugal +351</option>
+                            <option value="+974">🇶🇦 Qatar +974</option>
+                            <option value="+40">🇷🇴 Romania +40</option>
+                            <option value="+7">🇷🇺 Russia +7</option>
+                            <option value="+250">🇷🇼 Rwanda +250</option>
+                            <option value="+966">🇸🇦 Saudi Arabia +966</option>
+                            <option value="+221">🇸🇳 Senegal +221</option>
+                            <option value="+381">🇷🇸 Serbia +381</option>
+                            <option value="+232">🇸🇱 Sierra Leone +232</option>
+                            <option value="+65">🇸🇬 Singapore +65</option>
+                            <option value="+421">🇸🇰 Slovakia +421</option>
+                            <option value="+386">🇸🇮 Slovenia +386</option>
+                            <option value="+252">🇸🇴 Somalia +252</option>
+                            <option value="+27">🇿🇦 South Africa +27</option>
+                            <option value="+82">🇰🇷 South Korea +82</option>
+                            <option value="+211">🇸🇸 South Sudan +211</option>
+                            <option value="+34">🇪🇸 Spain +34</option>
+                            <option value="+94">🇱🇰 Sri Lanka +94</option>
+                            <option value="+249">🇸🇩 Sudan +249</option>
+                            <option value="+597">🇸🇷 Suriname +597</option>
+                            <option value="+268">🇸🇿 Eswatini +268</option>
+                            <option value="+46">🇸🇪 Sweden +46</option>
+                            <option value="+41">🇨🇭 Switzerland +41</option>
+                            <option value="+963">🇸🇾 Syria +963</option>
+                            <option value="+886">🇹🇼 Taiwan +886</option>
+                            <option value="+992">🇹🇯 Tajikistan +992</option>
+                            <option value="+255">🇹🇿 Tanzania +255</option>
+                            <option value="+66">🇹🇭 Thailand +66</option>
+                            <option value="+228">🇹🇬 Togo +228</option>
+                            <option value="+1-868">🇹🇹 Trinidad & Tobago +1-868</option>
+                            <option value="+216">🇹🇳 Tunisia +216</option>
+                            <option value="+90">🇹🇷 Turkey +90</option>
+                            <option value="+993">🇹🇲 Turkmenistan +993</option>
+                            <option value="+256" selected>🇺🇬 Uganda +256</option>
+                            <option value="+380">🇺🇦 Ukraine +380</option>
+                            <option value="+971">🇦🇪 UAE +971</option>
+                            <option value="+44">🇬🇧 United Kingdom +44</option>
+                            <option value="+1">🇺🇸 United States +1</option>
+                            <option value="+598">🇺🇾 Uruguay +598</option>
+                            <option value="+998">🇺🇿 Uzbekistan +998</option>
+                            <option value="+58">🇻🇪 Venezuela +58</option>
+                            <option value="+84">🇻🇳 Vietnam +84</option>
+                            <option value="+967">🇾🇪 Yemen +967</option>
+                            <option value="+260">🇿🇲 Zambia +260</option>
+                            <option value="+263">🇿🇼 Zimbabwe +263</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone-number">
+                            <i class="fas fa-mobile-alt"></i> Phone Number
+                        </label>
+                        <div class="phone-input-group">
+                            <span class="phone-prefix" id="phone-prefix">+256</span>
+                            <input type="tel" id="phone-number" class="phone-input" 
+                                   placeholder="Enter your number" required
+                                   inputmode="numeric" autocomplete="tel-national">
+                        </div>
+                        <small class="input-hint">We'll send a verification code to this number</small>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary btn-send" id="btn-send-code">
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Send Verification Code</span>
+                    </button>
+                </form>
+                
+                <div id="recaptcha-container"></div>
+                
+                <!-- Verification Section -->
+                <div id="verification-section" class="verification-section hidden">
+                    <div class="verification-header">
+                        <button type="button" class="btn-back" id="btn-back-phone">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <h3>Verify Phone</h3>
+                    </div>
+                    
+                    <p class="verification-message">
+                        Enter 6-digit code sent to<br>
+                        <strong id="display-phone">+256 XXXXXXXXX</strong>
+                    </p>
+                    
+                    <div class="code-inputs">
+                        <input type="text" class="code-digit" maxlength="1" pattern="[0-9]" inputmode="numeric" autocomplete="one-time-code">
+                        <input type="text" class="code-digit" maxlength="1" pattern="[0-9]" inputmode="numeric">
+                        <input type="text" class="code-digit" maxlength="1" pattern="[0-9]" inputmode="numeric">
+                        <input type="text" class="code-digit" maxlength="1" pattern="[0-9]" inputmode="numeric">
+                        <input type="text" class="code-digit" maxlength="1" pattern="[0-9]" inputmode="numeric">
+                        <input type="text" class="code-digit" maxlength="1" pattern="[0-9]" inputmode="numeric">
+                    </div>
+                    
+                    <div id="code-error" class="code-error hidden">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span></span>
+                    </div>
+                    
+                    <button id="btn-verify" class="btn-primary" disabled>
+                        <i class="fas fa-check-circle"></i>
+                        <span>Verify & Continue</span>
+                    </button>
+                    
+                    <div class="resend-section">
+                        <span>Didn't receive code?</span>
+                        <button id="btn-resend" class="btn-link" disabled>
+                            Resend <span id="resend-timer">(30s)</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="login-footer">
+                    <div class="footer-links">
+                        <a href="#privacy">Privacy Policy</a>
+                        <span>•</span>
+                        <a href="#terms">Terms of Service</a>
+                    </div>
+                    <p class="copyright">&copy; 2024 MICHO MESSENGER. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="chat-screen" class="screen">
+        <div class="app-container">
+            <!-- Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <header class="sidebar-header">
+                    <div class="user-profile" id="user-profile-btn">
+                        <div class="avatar avatar-sm">
+                            <img src="assets/images/default-avatar.png" alt="Me" id="sidebar-avatar">
+                            <span class="status-dot online" id="sidebar-status"></span>
+                        </div>
+                        <div class="user-details">
+                            <span class="user-name" id="sidebar-name">User</span>
+                            <span class="user-phone" id="sidebar-phone">+256XXXXXXXXX</span>
+                        </div>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-icon" id="btn-new-chat" title="New Chat">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon" id="btn-menu-toggle" title="Menu">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="dropdown-menu hidden" id="main-menu">
+                            <div class="menu-item" id="menu-new-group">
+                                <i class="fas fa-users"></i> New Group
+                            </div>
+                            <div class="menu-item" id="menu-archived">
+                                <i class="fas fa-archive"></i> Archived Chats
+                            </div>
+                            <div class="menu-item" id="menu-starred">
+                                <i class="fas fa-star"></i> Starred Messages
+                            </div>
+                            <div class="menu-item" id="menu-settings">
+                                <i class="fas fa-cog"></i> Settings
+                            </div>
+                            <div class="menu-divider"></div>
+                            <div class="menu-item" id="menu-logout">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </div>
+                        </div>
+                    </div>
+                </header>
+                
+                <div class="search-container">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-input" placeholder="Search chats..." autocomplete="off">
+                        <button class="btn-clear hidden" id="btn-clear-search">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="chat-list" id="chat-list">
+                    <div class="empty-chats">
+                        <i class="fas fa-comments"></i>
+                        <p>No conversations yet</p>
+                        <small>Start a new chat to begin messaging</small>
+                    </div>
+                </div>
+            </aside>
+            
+            <!-- Main Chat Area -->
+            <main class="main-chat" id="main-chat">
+                <!-- Empty State -->
+                <div class="chat-empty-state" id="chat-empty-state">
+                    <div class="empty-content">
+                        <div class="m-logo-large">
+                            <svg viewBox="0 0 120 120" width="120" height="120">
+                                <circle cx="60" cy="60" r="55" fill="#25d366" opacity="0.1"/>
+                                <circle cx="60" cy="60" r="45" fill="none" stroke="#25d366" stroke-width="2"/>
+                                <path d="M35 40 L35 80 L50 65 L60 75 L60 45 L50 55 Z" fill="#25d366" opacity="0.5"/>
+                                <rect x="68" y="38" width="15" height="44" rx="4" fill="#25d366" opacity="0.5"/>
+                            </svg>
+                        </div>
+                        <h2>MICHO MESSENGER</h2>
+                        <p>Free messaging, voice & video calls</p>
+                        <div class="features-list">
+                            <div class="feature-item">
+                                <i class="fas fa-comment-dots"></i>
+                                <span>Instant messaging</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-phone"></i>
+                                <span>Voice calls</span>
+                            </div>
+                            <div class="feature-item">
+                                <i class="fas fa-video"></i>
+                                <span>Video calls</span>
+                            </div>
+                        </div>
+                        <div class="encryption-badge">
+                            <i class="fas fa-lock"></i>
+                            <span>End-to-end encrypted</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chat Header -->
+                <header class="chat-header hidden" id="chat-header">
+                    <div class="chat-contact">
+                        <button class="btn-back" id="btn-back-chat">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <div class="avatar avatar-sm" id="contact-avatar-container">
+                            <img src="assets/images/default-avatar.png" alt="Contact" id="contact-avatar">
+                            <span class="status-dot" id="contact-status-dot"></span>
+                        </div>
+                        <div class="contact-info" id="contact-info-btn">
+                            <h3 id="contact-name">Contact</h3>
+                            <span id="contact-status-text">offline</span>
+                        </div>
+                    </div>
+                    <div class="chat-actions">
+                        <button class="btn-icon" id="btn-voice-call" title="Voice Call">
+                            <i class="fas fa-phone-alt"></i>
+                        </button>
+                        <button class="btn-icon" id="btn-video-call" title="Video Call">
+                            <i class="fas fa-video"></i>
+                        </button>
+                        <button class="btn-icon" id="btn-chat-menu-toggle" title="More">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="dropdown-menu hidden" id="chat-menu">
+                            <div class="menu-item" id="chat-menu-info">
+                                <i class="fas fa-info-circle"></i> Contact Info
+                            </div>
+                            <div class="menu-item" id="chat-menu-search">
+                                <i class="fas fa-search"></i> Search Messages
+                            </div>
+                            <div class="menu-item" id="chat-menu-mute">
+                                <i class="fas fa-bell-slash"></i> Mute
+                            </div>
+                            <div class="menu-divider"></div>
+                            <div class="menu-item text-danger" id="chat-menu-delete">
+                                <i class="fas fa-trash-alt"></i> Delete Chat
+                            </div>
+                        </div>
+                    </div>
+                </header>
+                
+                <!-- Messages Area -->
+                <div class="messages-container" id="messages-container">
+                    <div class="messages-encryption-notice">
+                        <i class="fas fa-lock"></i>
+                        <span>Messages are end-to-end encrypted. No one outside of this chat can read them.</span>
+                    </div>
+                </div>
+                
+                <!-- Typing Indicator -->
+                <div class="typing-indicator hidden" id="typing-indicator">
+                    <div class="typing-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                    <span>typing...</span>
+                </div>
+                
+                <!-- Message Input -->
+                <footer class="message-input-area hidden" id="message-input-area">
+                    <div class="reply-preview hidden" id="reply-preview">
+                        <div class="reply-info">
+                            <i class="fas fa-reply"></i>
+                            <span id="reply-text">Replying to message</span>
+                        </div>
+                        <button class="btn-icon-sm" id="btn-cancel-reply">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="input-row">
+                        <button class="btn-icon" id="btn-emoji-toggle" title="Emoji">
+                            <i class="far fa-smile"></i>
+                        </button>
+                        <button class="btn-icon" id="btn-attach" title="Attach">
+                            <i class="fas fa-plus-circle"></i>
+                        </button>
+                        
+                        <div class="message-input-wrapper">
+                            <textarea id="message-input" placeholder="Type a message..." rows="1" disabled></textarea>
+                        </div>
+                        
+                        <button class="btn-icon" id="btn-voice-record" title="Voice Message">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        
+                        <button class="btn-icon btn-send-msg hidden" id="btn-send-message" title="Send">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Emoji Picker -->
+                    <div class="emoji-picker hidden" id="emoji-picker">
+                        <div class="emoji-categories" id="emoji-categories"></div>
+                        <div class="emoji-grid" id="emoji-grid"></div>
+                    </div>
+                    
+                    <!-- Attachment Menu -->
+                    <div class="attachment-menu hidden" id="attachment-menu">
+                        <div class="attachment-item" data-type="image">
+                            <div class="attach-icon"><i class="fas fa-image"></i></div>
+                            <span>Image</span>
+                        </div>
+                        <div class="attachment-item" data-type="camera">
+                            <div class="attach-icon"><i class="fas fa-camera"></i></div>
+                            <span>Camera</span>
+                        </div>
+                        <div class="attachment-item" data-type="document">
+                            <div class="attach-icon"><i class="fas fa-file"></i></div>
+                            <span>Document</span>
+                        </div>
+                        <div class="attachment-item" data-type="location">
+                            <div class="attach-icon"><i class="fas fa-map-marker-alt"></i></div>
+                            <span>Location</span>
+                        </div>
+                        <div class="attachment-item" data-type="contact">
+                            <div class="attach-icon"><i class="fas fa-user"></i></div>
+                            <span>Contact</span>
+                        </div>
+                    </div>
+                </footer>
+            </main>
+            
+            <!-- Contact Info Panel -->
+            <aside class="info-panel hidden" id="info-panel">
+                <header class="panel-header">
+                    <button class="btn-icon" id="btn-close-panel">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <h3>Contact Info</h3>
+                </header>
+                <div class="panel-content" id="panel-content">
+                    <!-- Dynamically loaded -->
+                </div>
+            </aside>
+            
+            <!-- New Chat Modal -->
+            <div class="modal-overlay hidden" id="new-chat-modal">
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3>New Chat</h3>
+                        <button class="btn-icon" id="btn-close-modal">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Enter phone number with country code</label>
+                            <input type="text" id="new-chat-phone" placeholder="+256XXXXXXXXX">
+                        </div>
+                        <button class="btn-primary" id="btn-start-chat">
+                            <i class="fas fa-comment"></i> Start Chat
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="file-input" accept="image/*,video/*,application/*" hidden>
+    <input type="file" id="camera-input" accept="image/*" capture="camera" hidden>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    
+    <!-- App Scripts -->
+    <script src="js/firebase-config.js"></script>
+    <script src="js/emoji-data.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
