@@ -3,13 +3,13 @@
 // Get them from: Firebase Console > Project Settings > General > Your apps > Web app
 
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY_HERE",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID",
-    measurementId: "YOUR_MEASUREMENT_ID"
+    apiKey: "AIzaSyCHiySVRIuUEyemWuxSWnx6oq9lq8c490w",
+    authDomain: "micho-messenger.firebaseapp.com",
+    projectId: "micho-messenger",
+    storageBucket: "micho-messenger.firebasestorage.app",
+    messagingSenderId: "640898799768",
+    appId: "1:640898799768:web:c4ae562b1852a4d80798ed",
+    measurementId: "G-8XNYNYDC7Q"
 };
 
 // Initialize Firebase
